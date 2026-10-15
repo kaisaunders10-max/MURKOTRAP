@@ -6,7 +6,12 @@ if saved then
     enabled = saved == 'true'
 end
 
-local function notify(message)
+-- Uses the QBCore notification when qb-core is running, otherwise the GTA feed.
+local function notify(message, kind)
+    if GetResourceState('qb-core') == 'started' then
+        TriggerEvent('QBCore:Notify', message, kind)
+        return
+    end
     BeginTextCommandThefeedPost('STRING')
     AddTextComponentSubstringPlayerName(message)
     EndTextCommandThefeedPostTicker(false, false)
@@ -15,17 +20,23 @@ end
 local function setEnabled(value)
     enabled = value
     SetResourceKvp(KVP_KEY, tostring(enabled))
-    notify(('Crosshair %s'):format(enabled and '~g~on~s~' or '~r~off~s~'))
+    notify(enabled and 'Crosshair on' or 'Crosshair off', enabled and 'success' or 'error')
+    print(('[murko_crosshair] crosshair %s'):format(enabled and 'on' or 'off'))
 end
 
--- Draws a rectangle centred on the screen centre plus an offset, all in pixels.
+-- Draws a rectangle centred on the screen centre plus an offset. Sizes are in
+-- pixels on a 1080p screen and scale with the screen height.
 local function rect(px, py, offsetX, offsetY, width, height, r, g, b, a)
     DrawRect(0.5 + offsetX * px, 0.5 + offsetY * py, width * px, height * py, r, g, b, a)
 end
 
 local function drawCrosshair()
-    local resX, resY = GetActiveScreenResolution()
-    local px, py = 1.0 / resX, 1.0 / resY
+    local aspect = GetAspectRatio(false)
+    if not aspect or aspect <= 0 then
+        aspect = 16 / 9
+    end
+    local py = 1.0 / 1080
+    local px = py / aspect
 
     local c = Config.Color
     local len, thick, gap = Config.Length, Config.Thickness, Config.Gap
@@ -53,7 +64,7 @@ end
 
 CreateThread(function()
     while true do
-        if enabled and not IsPauseMenuActive() and not IsScreenFadedOut() then
+        if enabled and not IsPauseMenuActive() then
             if Config.HideDefaultReticle then
                 HideHudComponentThisFrame(14)
             end
@@ -79,3 +90,5 @@ end, false)
 TriggerEvent('chat:addSuggestion', '/crosshair', 'Turn your crosshair on or off', {
     { name = 'on|off', help = 'Optional. Leave empty to toggle' },
 })
+
+print('[murko_crosshair] loaded - type /crosshair to toggle')

@@ -3,7 +3,7 @@ Config = {}
 -- Crosshair colour (0-255) and opacity.
 Config.Color = { r = 255, g = 255, b = 255, a = 230 }
 
--- Sizes are in screen pixels.
+-- Sizes are in pixels on a 1080p screen (they scale up on bigger screens).
 Config.Length = 6      -- length of each of the four lines (0 = dot only)
 Config.Thickness = 2   -- line thickness
 Config.Gap = 3         -- empty space between the centre and each line
