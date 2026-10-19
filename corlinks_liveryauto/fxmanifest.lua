@@ -1,0 +1,8 @@
+fx_version 'cerulean'
+game 'gta5'
+lua54 'yes'
+name 'corlinks_liveryauto'
+description 'Watches the livery folder: new exports start for everyone, updated exports restart automatically.'
+version '1.9.2'
+server_script 'server.lua'
+client_script 'client.lua'

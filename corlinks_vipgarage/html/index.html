@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Corlinks Workshop</title>
+<style>
+/* Corlinks Premium vehicle editor - Corlinks purple, glass-dark sheet on the right, faint diagonal CORLINKS watermark behind everything.
+   Built for readability first: 13-14px body text, high-contrast labels, one accent. No backdrop-filter (black bars in FiveM NUI). ASCII-only. */
+:root{
+  --bg:#09060f; --sheet:rgba(12,8,22,.95); --card:#151024; --card2:#1c1530; --line:rgba(168,85,247,.16); --line2:rgba(168,85,247,.38);
+  --fg:#f4f0ff; --mut:#a99fc7; --dim:#6f6690; --acc:#a855f7; --acc2:#7c3aed; --acc3:#d8b4fe; --ink:#ffffff; --gold:#f5c542; --ok:#4ade80;
+  --grad:linear-gradient(135deg,#b46cff 0%,#7c3aed 100%);
+  --cond:'Bahnschrift SemiCondensed','Bahnschrift','Arial Narrow',sans-serif; --font:'Bahnschrift','Segoe UI',sans-serif; --mono:'Cascadia Mono','Consolas',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-family:var(--font);color:var(--fg);user-select:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+#app{position:fixed;inset:0;display:none}#app.on{display:block}
+#stage{position:absolute;inset:0;cursor:grab;z-index:1}#stage:active{cursor:grabbing}
+.vig{position:absolute;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 34% 55%,transparent 40%,rgba(9,6,15,.62) 100%),linear-gradient(90deg,rgba(9,6,15,.35),transparent 30%,transparent 62%,rgba(9,6,15,.55))}
+/* diagonal watermark: whole screen, very low opacity, never blocks the mouse */
+.wm{position:absolute;left:-40%;top:-60%;width:180%;height:220%;transform:rotate(-24deg);pointer-events:none;z-index:0;display:flex;flex-direction:column;justify-content:center;gap:34px;overflow:hidden}
+.wm div{white-space:nowrap;font:800 96px/1 var(--cond);letter-spacing:.32em;color:transparent;-webkit-text-stroke:1px rgba(168,85,247,.10)}
+.wm div:nth-child(even){margin-left:-380px;-webkit-text-stroke:0;color:rgba(168,85,247,.045)}
+#app > *:not(#stage):not(.vig):not(.wm){z-index:2}
+
+/* ---------- sheet ---------- */
+#sheet{position:absolute;top:20px;right:20px;bottom:20px;width:552px;display:flex;flex-direction:column;background:var(--sheet);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);animation:in .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes in{from{transform:translateX(34px);opacity:0}to{transform:none;opacity:1}}
+.haz{height:4px;background:var(--grad);box-shadow:0 0 18px rgba(168,85,247,.7)}
+.hd{position:relative;padding:18px 22px 16px;border-bottom:1px solid var(--line);overflow:hidden;
+  background:radial-gradient(ellipse at 100% 0%,rgba(168,85,247,.28),transparent 60%),linear-gradient(180deg,rgba(124,58,237,.12),transparent)}
+.hd:after{content:"CORLINKS";position:absolute;right:-12px;bottom:-26px;font:800 92px/1 var(--cond);letter-spacing:.06em;color:rgba(168,85,247,.07);pointer-events:none}
+.top{display:flex;align-items:center;gap:10px;font:700 11px var(--cond);letter-spacing:.3em;color:var(--acc3)}
+.top svg{width:15px;height:15px;stroke:var(--acc3);fill:none;stroke-width:2}
+.top .job{margin-left:auto;font:600 11px var(--mono);letter-spacing:.06em;color:var(--fg);background:rgba(168,85,247,.14);border:1px solid var(--line2);padding:4px 9px;border-radius:7px}
+.name{position:relative;margin-top:10px;font:800 34px/1.02 var(--cond);letter-spacing:.02em;text-transform:uppercase;text-shadow:0 2px 20px rgba(168,85,247,.35)}
+.sub{position:relative;display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.pill{font:700 10.5px var(--cond);letter-spacing:.16em;padding:5px 9px;border:1px solid var(--line);border-radius:7px;color:var(--mut);text-transform:uppercase;background:rgba(255,255,255,.03)}
+.pill.plate{background:#f4f1e6;color:#160f2a;border-color:#f4f1e6;font-family:var(--mono);letter-spacing:.1em}
+.pill.warn{background:rgba(245,197,66,.14);color:var(--gold);border-color:rgba(245,197,66,.4);display:none}.pill.warn.on{display:inline-block}
+.specs{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.spec small{display:flex;justify-content:space-between;align-items:baseline;font:700 9.5px var(--cond);letter-spacing:.18em;color:var(--mut)}
+.spec small b{font:700 12px var(--mono);color:var(--fg);letter-spacing:0}
+.gauge{position:relative;height:6px;margin-top:7px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.gauge i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--grad);box-shadow:0 0 12px rgba(168,85,247,.6);transition:width .35s}
+.cond{position:relative;display:flex;gap:16px;margin-top:13px;font:700 10px var(--cond);letter-spacing:.16em;color:var(--dim)}
+.cond b{color:var(--fg);font-family:var(--mono);letter-spacing:0}
+
+.main{flex:1;display:flex;min-height:0}
+.rail{width:78px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;padding:10px 8px;background:rgba(0,0,0,.18)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 0 9px;border-radius:12px;color:var(--mut);font:700 9.5px var(--cond);letter-spacing:.12em;text-transform:uppercase;position:relative;transition:.15s}
+.tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab:hover{color:var(--fg);background:rgba(168,85,247,.08)}
+.tab.on{color:#fff;background:var(--grad);box-shadow:0 8px 20px rgba(124,58,237,.45)}
+.tab .k{position:absolute;top:4px;right:7px;font:600 8px var(--mono);opacity:.45}
+.body{flex:1;overflow-y:auto;padding:4px 20px 20px}
+.body::-webkit-scrollbar{width:6px}.body::-webkit-scrollbar-thumb{background:rgba(168,85,247,.35);border-radius:6px}
+.ttl{display:flex;align-items:baseline;gap:10px;margin:18px 0 4px}
+.ttl h2{font:800 22px var(--cond);text-transform:uppercase;letter-spacing:.04em}
+.ttl span{font:500 12px var(--font);color:var(--mut)}
+.sec{display:flex;align-items:center;gap:10px;margin:20px 0 10px;font:700 10.5px var(--cond);letter-spacing:.24em;color:var(--acc3)}
+.sec:before{content:"";width:6px;height:14px;border-radius:3px;background:var(--grad)}
+.sec:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+.sec em{font-style:normal;font-family:var(--mono);letter-spacing:0;color:var(--dim)}
+.empty{padding:24px;border:1px dashed var(--line2);border-radius:14px;color:var(--mut);font-size:13px;line-height:1.6;text-align:center;margin-top:14px}
+.empty b{color:var(--acc3)}
+
+/* livery tiles */
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lv{border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;position:relative;overflow:hidden;transition:.15s}
+.lv:hover{border-color:var(--line2);transform:translateY(-1px)}
+.lv .sw{height:58px;border-bottom:1px solid var(--line);position:relative;background:linear-gradient(135deg,#2a1b4a,#151024);overflow:hidden}
+.lv .sw:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-24deg,rgba(168,85,247,.10) 0 2px,transparent 2px 14px)}
+.lv .sw b{position:absolute;left:12px;bottom:6px;font:800 26px var(--cond);color:rgba(255,255,255,.16)}
+.lv .ck{position:absolute;right:10px;top:10px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:12px;color:transparent;background:rgba(0,0,0,.3)}
+.lv .tx{padding:10px 12px 11px}
+.lv .tx b{display:block;font:600 14px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv .tx small{display:flex;align-items:center;gap:6px;margin-top:4px;font:700 9.5px var(--cond);letter-spacing:.18em;color:var(--dim)}
+.lv.apex .tx small{color:var(--acc3)}
+.lv.apex .tx small:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.lv.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),0 12px 30px rgba(124,58,237,.35)}
+.lv.on .sw{background:var(--grad)}
+.lv.on .sw b{color:rgba(255,255,255,.55)}
+.lv.on .ck{background:#fff;color:#5b21b6;border-color:#fff}
+.lv.off{opacity:.5;cursor:default;border-style:dashed}.lv.off .tx small{color:var(--gold)}.lv.off .tx small:before{background:var(--gold);box-shadow:none}
+
+/* rows */
+.search{display:flex;align-items:center;gap:9px;height:40px;padding:0 12px;margin-top:12px;border:1px solid var(--line);border-radius:11px;background:rgba(0,0,0,.25)}
+.search:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px rgba(168,85,247,.15)}
+.search svg{width:15px;height:15px;stroke:var(--mut);fill:none;stroke-width:2}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--fg);font:14px var(--font)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-top:7px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.row:hover{border-color:var(--line2)}
+.row .no{font:600 10px var(--mono);color:var(--dim);width:30px}
+.row .n{flex:1;min-width:0}
+.row .n b{display:block;font:600 14px var(--font)}
+.row .n small{display:block;margin-top:3px;font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ticks{display:flex;gap:3px;margin-top:7px}
+.ticks i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.07)}.ticks i.on{background:var(--grad)}
+.st{display:flex;gap:5px}
+.st button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:18px}
+.st button:hover{background:var(--grad);border-color:transparent}
+.tg{width:48px;height:27px;border-radius:14px;position:relative;cursor:pointer;flex:none;background:rgba(255,255,255,.1);transition:.15s}
+.tg i{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.tg.on{background:var(--grad);box-shadow:0 0 14px rgba(168,85,247,.45)}.tg.on i{left:24px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:8px 13px;border:1px solid var(--line);border-radius:10px;font:700 11.5px var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);cursor:pointer;background:rgba(255,255,255,.03)}
+.chip:hover{color:var(--fg);border-color:var(--line2)}
+.chip.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(124,58,237,.4)}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.act{height:58px;border:1px solid var(--line);border-radius:12px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:700 10px var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.act svg{width:18px;height:18px;stroke:var(--acc3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.act:hover{border-color:var(--line2);color:var(--fg)}
+.act.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(124,58,237,.4)}.act.on svg{stroke:#fff}
+.range{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-top:8px}
+.range b{font:600 14px var(--font);width:92px}
+.range input{flex:1;-webkit-appearance:none;height:5px;border-radius:5px;background:rgba(255,255,255,.1);outline:0}
+.range input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--acc);cursor:pointer}
+.range span{font:600 12px var(--mono);width:38px;text-align:right}
+
+/* paint */
+.pp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cbox{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.cbox .c{height:62px;position:relative;border-bottom:1px solid var(--line)}
+.cbox input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.cbox .t{padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
+.cbox .t b{font:700 11px var(--cond);letter-spacing:.18em;text-transform:uppercase}
+.cbox .t small{font:600 11px var(--mono);color:var(--mut)}
+.pal{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.pal div{aspect-ratio:1;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:.12s}
+.pal div:hover{transform:scale(1.1)}
+.pal div.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--acc)}
+.qs{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.qs div{width:28px;height:28px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.14)}
+.qs div:hover{transform:scale(1.12)}
+.lab{margin-top:12px;font:700 9.5px var(--cond);letter-spacing:.22em;color:var(--dim)}
+
+/* footer */
+.ft{display:grid;grid-template-columns:1fr 1.7fr;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:rgba(0,0,0,.22)}
+.ft button{height:48px;border-radius:13px;font:800 13px var(--cond);letter-spacing:.2em;text-transform:uppercase}
+.cancel{border:1px solid var(--line2)!important;color:var(--mut);background:rgba(255,255,255,.03)}.cancel:hover{color:#fff;border-color:#f87171!important;background:rgba(248,113,113,.1)}
+.save{background:var(--grad);color:#fff;box-shadow:0 12px 30px rgba(124,58,237,.5),inset 0 1px 0 rgba(255,255,255,.25)}.save:hover{filter:brightness(1.1)}
+.keys{display:flex;justify-content:space-between;padding:0 20px 13px;background:rgba(0,0,0,.22);font:700 9.5px var(--cond);letter-spacing:.16em;color:var(--dim)}
+kbd{font:600 9.5px var(--mono);padding:2px 6px;border-radius:5px;border:1px solid var(--line2);color:var(--acc3);background:rgba(168,85,247,.1);margin-right:4px}
+
+/* ---------- floating docks (the HUD is hidden while open) ---------- */
+.brand{position:absolute;left:26px;top:24px;display:flex;align-items:center;gap:14px}
+.brand .lg2{width:46px;height:46px;border-radius:13px;background:var(--grad);color:#fff;display:grid;place-items:center;font:800 26px var(--cond);box-shadow:0 10px 26px rgba(124,58,237,.55),inset 0 1px 0 rgba(255,255,255,.3)}
+.brand b{display:block;font:800 21px var(--cond);letter-spacing:.26em;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.brand small{display:block;font:700 10px var(--cond);letter-spacing:.34em;color:var(--acc3);margin-top:3px}
+.dock{position:absolute;left:26px;top:92px;display:flex;flex-direction:column;gap:10px}
+.views{display:flex;gap:4px;padding:5px;border-radius:14px;background:var(--sheet);border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.views button{height:36px;padding:0 13px;border-radius:10px;font:700 11px var(--cond);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.views button:hover{color:#fff;background:rgba(168,85,247,.12)}.views button.on{background:var(--grad);color:#fff}
+.hint{display:flex;gap:12px;font:700 10px var(--cond);letter-spacing:.12em;color:rgba(255,255,255,.75);text-shadow:0 1px 4px #000}
+.lsw{position:absolute;bottom:26px;left:calc((100% - 592px) / 2 + 20px);transform:translateX(-50%);display:none;align-items:center;gap:6px;padding:6px;border-radius:16px;background:var(--sheet);border:1px solid var(--line2);box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 30px rgba(124,58,237,.18)}
+.lsw button{width:46px;height:46px;border-radius:12px;font-size:22px;color:#fff;background:rgba(255,255,255,.05)}.lsw button:hover{background:var(--grad)}
+.lsw .mid{min-width:260px;text-align:center;padding:0 10px}
+.lsw .mid b{display:block;font:800 17px var(--cond);letter-spacing:.05em;text-transform:uppercase}
+.lsw .mid small{display:block;margin-top:3px;font:700 9.5px var(--cond);letter-spacing:.22em;color:var(--acc3)}
+.toast{position:absolute;top:26px;left:calc((100% - 592px) / 2 + 20px);transform:translate(-50%,-10px);padding:10px 18px;border-radius:12px;background:var(--grad);color:#fff;font:800 11px var(--cond);letter-spacing:.2em;text-transform:uppercase;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 12px 30px rgba(124,58,237,.5)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* livery hero + thumbnails + locked help */
+.hero{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line2);background:#0d0918;margin-top:14px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.hero .img{height:190px;position:relative;background:repeating-conic-gradient(#120d20 0 25%,#0e0a19 0 50%) 0 0/18px 18px}
+.hero .img i{position:absolute;inset:10px;background-size:contain;background-position:center;background-repeat:no-repeat;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6))}
+.hero .img.fac{background:radial-gradient(ellipse at 30% 20%,rgba(168,85,247,.35),transparent 60%),linear-gradient(135deg,#231742,#110c1f)}
+.hero .img.fac b{position:absolute;right:18px;bottom:-10px;font:800 120px/1 var(--cond);color:rgba(255,255,255,.08)}
+.hero .img:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(9,6,15,.92))}
+.hero .meta{position:absolute;left:16px;right:16px;bottom:14px;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.hero .meta b{display:block;font:800 22px var(--cond);letter-spacing:.03em;text-transform:uppercase;text-shadow:0 2px 10px #000}
+.hero .meta small{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.tagx{font:700 9.5px var(--cond);letter-spacing:.16em;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,.55);border:1px solid var(--line2);color:var(--acc3);text-transform:uppercase}
+.tagx.live{color:var(--ok);border-color:rgba(74,222,128,.4)}
+.tagx.lock{color:var(--gold);border-color:rgba(245,197,66,.45)}
+.hero .nav{display:flex;gap:6px}
+.hero .nav button{width:38px;height:38px;border-radius:11px;background:rgba(0,0,0,.55);border:1px solid var(--line2);font-size:19px}
+.hero .nav button:hover{background:var(--grad);border-color:transparent}
+.lv .sw.has{background:repeating-conic-gradient(#120d20 0 25%,#0e0a19 0 50%) 0 0/12px 12px}
+.lv .sw.has:before{display:none}
+.lv .sw .th{position:absolute;inset:4px;background-size:contain;background-position:center;background-repeat:no-repeat}
+.lv.off .sw .th{filter:grayscale(1) brightness(.6)}
+.lv .lock{position:absolute;right:8px;top:8px;font:700 9px var(--cond);letter-spacing:.14em;padding:3px 7px;border-radius:6px;background:rgba(245,197,66,.16);border:1px solid rgba(245,197,66,.45);color:var(--gold)}
+.help{margin-top:16px;padding:14px 16px;border-radius:14px;border:1px solid rgba(245,197,66,.35);background:linear-gradient(135deg,rgba(245,197,66,.08),rgba(245,197,66,.02))}
+.help h4{display:flex;align-items:center;gap:8px;font:800 13px var(--cond);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.help p{margin-top:7px;font-size:12.5px;line-height:1.55;color:var(--mut)}
+.help p b{color:var(--fg)}
+.help ol{margin:8px 0 0 18px;font-size:12.5px;line-height:1.7;color:var(--mut)}
+.help code{font:600 11.5px var(--mono);color:var(--fg);background:rgba(255,255,255,.07);padding:1px 6px;border-radius:5px}
+</style></head>
+<body>
+<div id="app">
+  <div class="wm" id="wm"></div><div id="stage"></div><div class="vig"></div>
+  <div class="toast" id="toast"></div>
+  <div class="brand"><div class="lg2">C</div><div><b>CORLINKS</b><small>PREMIUM VEHICLE STUDIO</small></div></div>
+  <div class="dock">
+    <div class="views" id="views"><button data-v="hero" class="on">Showroom</button><button data-v="front">Front</button><button data-v="rear">Rear</button><button data-v="left">Left</button><button data-v="right">Right</button><button data-v="top">Top</button><button data-v="wheel">Wheel</button></div>
+    <div class="hint"><span><kbd>DRAG</kbd>ROTATE</span><span><kbd>WHEEL</kbd>ZOOM</span><span><kbd>&larr;</kbd><kbd>&rarr;</kbd>LIVERY</span><span><kbd>Q</kbd><kbd>E</kbd>SECTION</span></div>
+  </div>
+  <div class="lsw" id="lsw"><button id="lPrev">&lsaquo;</button><div class="mid"><b id="lName">-</b><small id="lInfo">LIVERY</small></div><button id="lNext">&rsaquo;</button></div>
+
+  <div id="sheet">
+    <div class="haz"></div>
+    <div class="hd">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>CORLINKS PREMIUM<span class="job" id="job">#----</span></div>
+      <div class="name" id="carName">Vehicle</div>
+      <div class="sub"><span class="pill plate" id="carPlate">PLATE</span><span class="pill" id="carModel">MODEL</span><span class="pill" id="carClass">CLASS</span><span class="pill warn" id="dirty">UNSAVED</span></div>
+      <div class="specs" id="specs"></div>
+      <div class="cond" id="cond"></div>
+    </div>
+    <div class="main"><div class="rail" id="rail"></div><div class="body" id="body"></div></div>
+    <div class="ft"><button class="cancel" id="cancel">Cancel</button><button class="save" id="save">Save &amp; apply</button></div>
+    <div class="keys"><span><kbd>ESC</kbd>CANCEL</span><span><kbd>ENTER</kbd>SAVE</span></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+// faint diagonal CORLINKS watermark across the whole screen
+$('wm').innerHTML = Array.from({ length: 14 }, () => '<div>' + 'CORLINKS &nbsp; '.repeat(14) + '</div>').join('');
+const post = (cb, d) => fetch(`https://corlinks_vipgarage/${cb}`, { method:'POST', body: JSON.stringify(d || {}) }).then(r => r.json()).catch(() => ({}));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let D = null, tab = 'livery', q = '', uid = 0;
+
+const IC = {
+  livery:'<path d="M3 17l5-9 4 6 3-4 6 7z"/><circle cx="17" cy="6" r="2"/>',
+  paint:'<path d="M18 4H6a2 2 0 0 0-2 2v3h16V6a2 2 0 0 0-2-2z"/><path d="M4 9h16v3H4z"/><path d="M11 12v6a2 2 0 0 0 4 0v-6"/>',
+  body:'<path d="M3 15v-3l2-5h11l3 5h2v3z"/><circle cx="7.5" cy="15.5" r="2"/><circle cx="16.5" cy="15.5" r="2"/>',
+  wheels:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/>',
+  lights:'<path d="M3 9h5l5-4v14l-5-4H3z"/><path d="M17 8l4-2M17 12h4M17 16l4 2"/>',
+  perf:'<path d="M12 14l4-5"/><path d="M3.5 18a9 9 0 1 1 17 0"/><circle cx="12" cy="14" r="1.5"/>',
+  extras:'<rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><path d="M16.5 14v6M13.5 17h6"/>',
+  shop:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>'
+};
+const AIC = {
+  door:'<path d="M5 3h10l4 4v14H5z"/><path d="M13 12h2"/>', all:'<path d="M3 7h18M3 12h18M3 17h18"/>', engine:'<path d="M5 10h3l2-3h5l2 3h2v6h-2l-2 2h-6l-3-3H5z"/>',
+  lights:'<path d="M3 9h5l5-4v14l-5-4H3z"/><path d="M17 8l4-2M17 12h4M17 16l4 2"/>', horn:'<path d="M3 10v4h4l6 4V6L7 10z"/><path d="M16 9a4 4 0 0 1 0 6"/>',
+  repair:IC.shop, wash:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>', reset:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'
+};
+const TABS = [['livery','Livery','Liveries painted on this car'],['paint','Paint','Respray, finish and trim colours'],['body','Body','Every body part this car has'],['wheels','Wheels','Rims, tyres and smoke'],['lights','Lights','Headlights, neon and tint'],['perf','Engine','Performance parts'],['extras','Extras','Model extras and plate'],['shop','Bay','Inspect, condition and special tyres']];
+const PAL = [[0,'#0d1116'],[1,'#1c1d21'],[3,'#3a3c40'],[4,'#8a9096'],[5,'#a9adb1'],[111,'#f0f0f0'],[27,'#c00e1a'],[28,'#da1918'],[35,'#b6111b'],[150,'#701416'],[38,'#f78616'],[41,'#f6aa1f'],[88,'#fbe212'],[89,'#f5cc5c'],[55,'#5af527'],[53,'#155c2d'],[92,'#78e22f'],[61,'#222e46'],[62,'#233155'],[64,'#47578f'],[70,'#0e5bba'],[73,'#2354a1'],[74,'#6ea3c6'],[68,'#3aa8c6'],[71,'#2f2d52'],[142,'#6b1f7b'],[145,'#621276'],[146,'#0d0518'],[135,'#f21f99'],[137,'#df5891'],[136,'#fdd6cd'],[96,'#221b19'],[90,'#462b1b'],[99,'#b78b55'],[158,'#c8a970'],[160,'#b6a26b'],[117,'#686f73'],[120,'#c6c6c6'],[12,'#13181f'],[147,'#1a0f2e']];
+const QUICK = ['#0a0a0a','#2b2b2b','#6b6b6b','#bdbdbd','#f4f4f4','#b3121b','#e8731b','#f2c81b','#1f8a3c','#1d4ed8','#38bdf8','#6d28d9','#db2777','#5b3a1a'];
+const PAINT_TYPES = [[0,'Normal'],[1,'Metallic'],[2,'Pearl'],[3,'Matte'],[4,'Metal'],[5,'Chrome']];
+const TINTS = [[0,'None'],[4,'Stock'],[3,'Light'],[2,'Dark'],[1,'Black'],[5,'Limo'],[6,'Green']];
+const XENON = [[-1,'Stock'],[0,'White'],[1,'Blue'],[2,'Electric'],[3,'Mint'],[4,'Lime'],[5,'Yellow'],[6,'Gold'],[7,'Orange'],[8,'Red'],[9,'Pink'],[10,'Hot pink'],[11,'Purple'],[12,'Blacklight']];
+const PLATES = [[0,'Blue / white'],[1,'Yellow / black'],[2,'Yellow / blue'],[3,'Blue / white 2'],[4,'Blue / white 3'],[5,'Yankton']];
+const SIDES = ['Left','Right','Front','Back'];
+const hex = a => '#' + a.map(v => ('0' + (v|0).toString(16)).slice(-2)).join('');
+const rgbOf = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const pad = n => ('0' + n).slice(-2);
+
+function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 1500); }
+function dirty(v){ $('dirty').classList.toggle('on', v); }
+async function set(o, silent){ if (!silent) dirty(true); const r = await post('set', o); if (r && r.d) { D = r.d; paint(); } }
+
+function livList(){ if (!D) return []; if (D.liveries.length) return D.liveries.filter(l => !l.noslot).map(l => ({ i:l.i, label:l.label, k: l.apex ? 'APEX STUDIO' : 'FACTORY', op:'livery', cur:D.livery }));
+  return (D.modLiveries || []).map(l => ({ i:l.i, label:l.label, k:'BODY LIVERY', op:'modLivery', cur:D.modLivery })); }
+function lswUpdate(){ const L = livList(); $('lsw').style.display = L.length > 1 ? 'flex' : 'none'; if (!L.length) return;
+  let i = L.findIndex(l => l.i === L[0].cur); if (i < 0) i = 0; $('lName').textContent = L[i].label; $('lInfo').textContent = `${L[i].k}  /  ${pad(i + 1)} OF ${pad(L.length)}`; }
+function livStep(d){ const L = livList(); if (L.length < 2) return; let i = L.findIndex(l => l.i === L[0].cur); if (i < 0) i = 0; const n = L[(i + d + L.length) % L.length]; set({ op:n.op, v:n.i }); }
+
+function ticks(i, n){ const c = Math.min(n, 12); if (c < 2) return ''; const on = Math.round(i / (n - 1) * (c - 1)); let s = ''; for (let k = 0; k < c; k++) s += `<i class="${k <= on && i > 0 ? 'on' : ''}"></i>`; return `<div class="ticks">${s}</div>`; }
+function stepper(label, opts, cur, onSet, code){
+  const i = Math.max(0, opts.findIndex(o => o.i === cur)), id = 's' + (++uid);
+  setTimeout(() => { const el = $(id); if (!el) return;
+    el.querySelector('.l').onclick = () => onSet(opts[(i - 1 + opts.length) % opts.length].i);
+    el.querySelector('.r').onclick = () => onSet(opts[(i + 1) % opts.length].i); });
+  return `<div class="row" id="${id}">${code != null ? `<span class="no">${esc(code)}</span>` : ''}<div class="n"><b>${esc(label)}</b><small>${esc(opts[i] ? opts[i].label : '-')}  /  ${i + 1} of ${opts.length}</small>${ticks(i, opts.length)}</div><div class="st"><button class="l">&lsaquo;</button><button class="r">&rsaquo;</button></div></div>`;
+}
+const toggle = (label, on, key, sub) => `<div class="row"><div class="n"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div><div class="tg ${on ? 'on' : ''}" data-tg="${key}"><i></i></div></div>`;
+const pal = (cur, op) => `<div class="pal">${PAL.map(([i, c]) => `<div style="background:${c}" class="${i === cur ? 'on' : ''}" data-pal="${op}" data-i="${i}"></div>`).join('')}</div>`;
+const chips = (list, cur, op) => `<div class="seg">${list.map(([i, l]) => `<div class="chip ${i === cur ? 'on' : ''}" data-chip="${op}" data-i="${i}">${esc(l)}</div>`).join('')}</div>`;
+const sec = (t, n) => `<div class="sec">${t}${n != null ? ` <em>${pad(n)}</em>` : ''}</div>`;
+const act = (key, label, icon, on) => `<button class="act ${on ? 'on' : ''}" data-act="${key}"><svg viewBox="0 0 24 24">${AIC[icon]}</svg>${esc(label)}</button>`;
+
+function livCard(l, on, kind){
+  const thumb = l.img ? `<i class="th" style="background-image:url('${esc(l.img)}')"></i>` : '';
+  if (l.noslot) return `<div class="lv apex off" title="Locked: this car has no livery slot ${l.i + 1} yet"><div class="sw ${l.img ? 'has' : ''}">${thumb}<b>${pad(l.i + 1)}</b><span class="lock">LOCKED</span></div><div class="tx"><b>${esc(l.label)}</b><small>NEEDS LIVERY SLOT ${l.i + 1}</small></div></div>`;
+  const st = kind === 'apex' ? 'apex' : '', sub = kind === 'apex' ? (l.live ? 'APEX STUDIO' : 'APEX / NOT LIVE') : (kind === 'body' ? 'BODY LIVERY' : 'FACTORY');
+  return `<div class="lv ${st} ${on ? 'on' : ''}" data-${kind === 'body' ? 'mliv' : 'liv'}="${l.i}"><div class="sw ${l.img ? 'has' : ''}">${thumb}<b>${kind === 'body' ? '' : pad(l.i + 1)}</b><span class="ck">&#10003;</span></div><div class="tx"><b>${esc(l.label)}</b><small>${sub}</small></div></div>`;
+}
+
+function header(){
+  $('carName').textContent = D.name; $('carPlate').textContent = (D.plate || '').trim(); $('carModel').textContent = (D.spawn || D.model || '').toUpperCase();
+  $('carClass').textContent = D.class || 'VEHICLE'; $('job').textContent = '#' + (D.plate || '').trim().replace(/\s+/g, '');
+  const s = D.stats || {};
+  const g = (l, v, val) => `<div class="spec"><small>${l}<b>${val}</b></small><div class="gauge"><i style="width:${v || 0}%"></i></div></div>`;
+  $('specs').innerHTML = g('SPEED', s.speed, (s.kmh || 0) + ' KMH') + g('ACCEL', s.accel, (s.accel || 0)) + g('BRAKING', s.brake, (s.brake || 0)) + g('GRIP', s.grip, (s.grip || 0));
+  const hp = D.health || {};
+  $('cond').innerHTML = `<span>BODY <b>${hp.body ?? 100}%</b></span><span>ENGINE <b>${hp.engine ?? 100}%</b></span><span>DIRT <b>${Math.round((D.dirt || 0) / 15 * 100)}%</b></span>`;
+}
+
+function paint(){
+  if (!D) return;
+  header();
+  $('rail').innerHTML = TABS.map(([k, l], n) => `<div class="tab ${tab === k ? 'on' : ''}" data-tab="${k}"><span class="k">${n + 1}</span><svg viewBox="0 0 24 24">${IC[k]}</svg>${l}</div>`).join('');
+  const T = TABS.find(t => t[0] === tab);
+  let h = `<div class="ttl"><h2>${T[1]}</h2><span>${T[2]}</span></div>`;
+  if (tab === 'livery') {
+    const usable = D.liveries.filter(l => !l.noslot), locked = D.liveries.filter(l => l.noslot);
+    const cur = usable.find(l => l.i === D.livery);
+    if (cur) {
+      const img = cur.img ? `<div class="img"><i style="background-image:url('${esc(cur.img)}')"></i></div>` : `<div class="img fac"><b>${pad(cur.i + 1)}</b></div>`;
+      h += `<div class="hero">${img}<div class="meta"><div><b>${esc(cur.label)}</b><small><span class="tagx">SLOT ${pad(cur.i + 1)} / ${pad(usable.length)}</span><span class="tagx ${cur.apex && cur.live ? 'live' : ''}">${cur.apex ? (cur.live ? 'APEX STUDIO - LIVE' : 'APEX - NOT LIVE') : 'FACTORY'}</span><span class="tagx">ON THIS CAR</span></small></div>${usable.length > 1 ? '<div class="nav"><button id="hPrev">&lsaquo;</button><button id="hNext">&rsaquo;</button></div>' : ''}</div></div>`;
+    }
+    const apex = D.liveries.filter(l => l.apex), og = D.liveries.filter(l => !l.apex);
+    if (apex.length) h += sec('APEX STUDIO', apex.length) + `<div class="lg">${apex.map(l => livCard(l, l.i === D.livery, 'apex')).join('')}</div>`;
+    if (og.length) h += sec('FACTORY', og.length) + `<div class="lg">${og.map(l => livCard(l, l.i === D.livery, 'og')).join('')}</div>`;
+    if (D.modLiveries.length > 1) h += sec('BODY LIVERIES', D.modLiveries.length) + `<div class="lg">${D.modLiveries.map(l => livCard(l, l.i === D.modLivery, 'body')).join('')}</div>`;
+    if (D.roof && D.roof.count > 0) { const ro = []; for (let i = 0; i < D.roof.count; i++) ro.push({ i, label:'Roof ' + (i + 1) }); h += sec('ROOF') + stepper('Roof livery', ro, D.roof.cur, v => set({ op:'roof', v })); }
+    if (locked.length) {
+      const l0 = locked[0], txd = l0.txd || (D.spawn || 'car'), base = l0.tex || 'xxx_sign_';
+      const need = locked.map(l => `<code>${esc(base)}${l.i + 1}</code>`).join(' ');
+      h += `<div class="help"><h4>&#9888; ${locked.length} livery ${locked.length === 1 ? 'pack is' : 'packs are'} locked</h4>
+        <p>This car was built with only <b>${usable.length} livery slot${usable.length === 1 ? '' : 's'}</b>, so there is nowhere to put ${locked.length === 1 ? 'this design' : 'these designs'} yet. Every car keeps its own livery - choosing one here never changes anyone else's car.</p>
+        <ol><li>Open <code>${esc(txd)}.ytd</code> in CodeWalker or OpenIV</li><li>Copy <code>${esc(base)}1</code> and add it as ${need}</li><li>Save, upload it to the server and restart the car</li></ol></div>`;
+    }
+    if (!D.liveries.length && D.modLiveries.length <= 1) h += `<div class="empty">No livery slots on this car.<br>Export one from Apex Vehicle Studio into <b>[Corlinks_Liverys]</b> and it appears here within a minute.</div>`;
+  } else if (tab === 'paint') {
+    h += sec('COLOURS') + `<div class="pp">
+      <div class="cbox"><div class="c" style="background:${hex(D.paint.p)}"><input type="color" id="cP" value="${hex(D.paint.p)}"></div><div class="t"><b>Primary</b><small>${hex(D.paint.p).toUpperCase()}</small></div></div>
+      <div class="cbox"><div class="c" style="background:${hex(D.paint.s)}"><input type="color" id="cS" value="${hex(D.paint.s)}"></div><div class="t"><b>Secondary</b><small>${hex(D.paint.s).toUpperCase()}</small></div></div></div>`;
+    h += `<div class="lab">QUICK PRIMARY</div><div class="qs">${QUICK.map(c => `<div style="background:${c}" data-q="primary" data-c="${c}"></div>`).join('')}</div>`;
+    h += `<div class="lab">QUICK SECONDARY</div><div class="qs">${QUICK.map(c => `<div style="background:${c}" data-q="secondary" data-c="${c}"></div>`).join('')}</div>`;
+    h += sec('PRIMARY FINISH') + chips(PAINT_TYPES, D.paint.primaryType, 'ptype');
+    h += sec('SECONDARY FINISH') + chips(PAINT_TYPES, D.paint.secondaryType, 'stype');
+    h += sec('PEARLESCENT') + pal(D.paint.pearl, 'pearl');
+    h += sec('INTERIOR') + pal(D.paint.interior, 'interior');
+    h += sec('DASHBOARD') + pal(D.paint.dash, 'dash');
+  } else if (tab === 'body' || tab === 'perf') {
+    let list = D.mods.filter(m => (tab === 'perf' ? m.group === 'perf' : m.group === 'body'));
+    if (tab === 'body') { h += `<div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Find a part" value="${esc(q)}"></div>`; if (q) list = list.filter(m => m.name.toLowerCase().includes(q.toLowerCase())); }
+    h += sec(tab === 'perf' ? 'PERFORMANCE PARTS' : 'PARTS', list.length);
+    h += list.length ? list.map(m => stepper(m.name, m.opts, m.cur, v => set({ op:'mod', t:m.t, v }), 'M' + pad(m.t))).join('') : `<div class="empty">${q && tab === 'body' ? 'No part matches that.' : 'This car has no parts here.'}</div>`;
+    if (tab === 'perf') h += sec('FORCED INDUCTION') + toggle('Turbo', D.toggles.turbo, 'turbo', 'Watch the accel gauge in the header');
+  } else if (tab === 'wheels') {
+    h += sec('RIMS') + stepper('Wheel type', D.wheelTypes, D.wheelType, v => set({ op:'wheelType', v }));
+    h += D.mods.filter(m => m.group === 'wheels').map(m => stepper(m.name, m.opts, m.cur, v => set({ op:'mod', t:m.t, v }), 'M' + pad(m.t))).join('');
+    h += sec('TYRES') + toggle('Custom tyres', D.customTyres, 'tyres', 'Branded sidewalls');
+    h += sec('RIM COLOUR') + pal(D.paint.wheel, 'wheelColor');
+    h += sec('TYRE SMOKE') + `<div class="cbox"><div class="c" style="background:${hex(D.smoke)};height:40px"><input type="color" id="cSm" value="${hex(D.smoke)}"></div><div class="t"><b>Smoke</b><small>${hex(D.smoke).toUpperCase()}</small></div></div>`;
+  } else if (tab === 'lights') {
+    h += sec('HEADLIGHTS') + chips(XENON, D.toggles.xenon ? D.xenonColor : -1, 'xenon');
+    h += sec('NEON') + toggle('Underglow', D.neon.on, 'neon', 'Every side at once');
+    h += `<div class="seg" style="margin-top:6px">${SIDES.map((s, i) => `<div class="chip ${D.neonSides && D.neonSides[i] ? 'on' : ''}" data-side="${i}">${s}</div>`).join('')}</div>`;
+    h += `<div class="cbox" style="margin-top:8px"><div class="c" style="background:${hex(D.neon.rgb)};height:40px"><input type="color" id="cN" value="${hex(D.neon.rgb)}"></div><div class="t"><b>Neon colour</b><small>${hex(D.neon.rgb).toUpperCase()}</small></div></div>`;
+    h += sec('WINDOW TINT') + chips(TINTS, D.paint.tint, 'tint');
+  } else if (tab === 'extras') {
+    h += sec('MODEL EXTRAS', D.extras.length) + (D.extras.length ? D.extras.map(e => toggle('Extra ' + pad(e.i), e.on, 'extra:' + e.i, 'Lightbars, push bars, antennas...')).join('') : '<div class="empty">No extras on this model.</div>');
+    h += sec('PLATE STYLE') + chips(PLATES, D.plateIndex, 'plate');
+  } else if (tab === 'shop') {
+    h += sec('INSPECT') + `<div class="btns">${(D.doors || []).map(d => act('door:' + d.i, d.name, 'door', d.open)).join('')}${act('doorsAll', 'All doors', 'all', (D.doors || []).some(d => d.open))}${act('engine', 'Engine', 'engine', D.engineOn)}${act('lightsPreview', 'Lights', 'lights', D.lightsOn)}${act('horn', 'Horn', 'horn')}</div>`;
+    h += sec('CONDITION') + `<div class="btns">${act('repair', 'Repair', 'repair')}${act('wash', 'Wash', 'wash')}${act('reset', 'Strip to stock', 'reset')}</div>`;
+    h += `<div class="range"><b>Dirt level</b><input type="range" id="dirt" min="0" max="15" step="1" value="${D.dirt || 0}"><span id="dirtV">${Math.round((D.dirt || 0) / 15 * 100)}%</span></div>`;
+    h += sec('SPECIAL TYRES') + toggle('Drift tyres', D.drift, 'drift', 'Low-grip tyres for sliding') + toggle('Bulletproof tyres', D.bpTyres, 'bpTyres', 'Tyres can not be burst');
+  }
+  const body = $('body'), y = body.scrollTop; body.innerHTML = h; body.scrollTop = y;
+  lswUpdate(); bind();
+}
+
+function bind(){
+  document.querySelectorAll('[data-tab]').forEach(t => t.onclick = () => goTab(t.dataset.tab));
+  if ($('hPrev')) { $('hPrev').onclick = () => livStep(-1); $('hNext').onclick = () => livStep(1); }
+  document.querySelectorAll('[data-liv]').forEach(e => e.onclick = () => set({ op:'livery', v:+e.dataset.liv }));
+  document.querySelectorAll('[data-mliv]').forEach(e => e.onclick = () => set({ op:'modLivery', v:+e.dataset.mliv }));
+  document.querySelectorAll('[data-pal]').forEach(e => e.onclick = () => set({ op:e.dataset.pal, v:+e.dataset.i }));
+  document.querySelectorAll('[data-q]').forEach(e => e.onclick = () => set({ op:e.dataset.q, v:rgbOf(e.dataset.c) }));
+  document.querySelectorAll('[data-side]').forEach(e => e.onclick = () => set({ op:'neonSide', i:+e.dataset.side, v:!e.classList.contains('on') }));
+  document.querySelectorAll('[data-chip]').forEach(e => e.onclick = () => {
+    const op = e.dataset.chip, v = +e.dataset.i;
+    if (op === 'ptype') set({ op:'paintType', which:'primary', v }); else if (op === 'stype') set({ op:'paintType', which:'secondary', v });
+    else if (op === 'xenon') v < 0 ? set({ op:'toggle', k:'xenon', v:false }) : set({ op:'xenonColor', v });
+    else if (op === 'tint') set({ op:'tint', v }); else if (op === 'plate') set({ op:'plateIndex', v });
+  });
+  document.querySelectorAll('[data-tg]').forEach(e => e.onclick = () => {
+    const k = e.dataset.tg, on = !e.classList.contains('on');
+    if (k.startsWith('extra:')) set({ op:'extra', e:+k.slice(6), v:on });
+    else if (['tyres','neon','drift','bpTyres'].includes(k)) set({ op:k, v:on }); else set({ op:'toggle', k, v:on });
+  });
+  document.querySelectorAll('[data-act]').forEach(e => e.onclick = () => {
+    const k = e.dataset.act, on = !e.classList.contains('on');
+    if (k.startsWith('door:')) set({ op:'door', i:+k.slice(5), v:on }, true);
+    else if (k === 'doorsAll' || k === 'engine' || k === 'lightsPreview') set({ op:k, v:on }, true);
+    else if (k === 'horn') set({ op:'horn' }, true);
+    else if (k === 'repair') { set({ op:'repair' }); toast('Repaired'); }
+    else if (k === 'wash') { set({ op:'wash' }); toast('Washed'); }
+    else if (k === 'reset') { set({ op:'reset' }); toast('Stripped to stock'); }
+  });
+  const live = (id, op) => { const el = $(id); if (!el) return; let t = null;
+    el.oninput = () => { el.parentElement.style.background = el.value; clearTimeout(t); dirty(true); t = setTimeout(() => post('set', { op, v: rgbOf(el.value) }), 60); };
+    el.onchange = () => set({ op, v: rgbOf(el.value) }); };
+  live('cP', 'primary'); live('cS', 'secondary'); live('cN', 'neonColor'); live('cSm', 'smokeColor');
+  const dr = $('dirt'); if (dr) { dr.oninput = () => { $('dirtV').textContent = Math.round(dr.value / 15 * 100) + '%'; post('set', { op:'dirt', v:+dr.value }); dirty(true); }; dr.onchange = () => set({ op:'dirt', v:+dr.value }); }
+  const qi = $('q'); if (qi) qi.oninput = () => { q = qi.value; const p = qi.selectionStart; paint(); const n = $('q'); n.focus(); n.setSelectionRange(p, p); };
+}
+
+function goTab(k){
+  tab = k; paint(); $('body').scrollTop = 0;
+  const v = k === 'wheels' ? 'wheel' : (k === 'lights' ? 'front' : 'hero');
+  post('cam', { view:v }); markView(v);
+}
+function markView(v){ document.querySelectorAll('[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+
+let drag = null;
+$('stage').onmousedown = e => { drag = [e.clientX, e.clientY]; };
+addEventListener('mouseup', () => drag = null);
+addEventListener('mousemove', e => { if (!drag) return; const dx = e.clientX - drag[0], dy = e.clientY - drag[1]; drag = [e.clientX, e.clientY]; post('cam', { dx, dy }); markView(''); });
+$('stage').onwheel = e => post('cam', { dz: e.deltaY });
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { post('cam', { view:b.dataset.v }); markView(b.dataset.v); });
+$('save').onclick = () => post('save');
+$('cancel').onclick = () => post('cancel');
+$('lPrev').onclick = () => livStep(-1); $('lNext').onclick = () => livStep(1);
+addEventListener('keydown', e => { if (!$('app').classList.contains('on')) return;
+  const typing = e.target.tagName === 'INPUT' && e.target.type !== 'range';
+  if (e.key === 'Escape') { if (typing) { e.target.blur(); return; } post('cancel'); }
+  if (typing) return;
+  if (e.key === 'Enter') post('save');
+  if (e.key === 'ArrowLeft') livStep(-1); if (e.key === 'ArrowRight') livStep(1);
+  const i = TABS.findIndex(t => t[0] === tab);
+  if (e.key === 'q' || e.key === 'Q') goTab(TABS[(i - 1 + TABS.length) % TABS.length][0]);
+  if (e.key === 'e' || e.key === 'E') goTab(TABS[(i + 1) % TABS.length][0]);
+  if (/^[1-8]$/.test(e.key)) goTab(TABS[+e.key - 1][0]);
+});
+addEventListener('message', e => { const m = e.data || {};
+  if (m.a === 'open') { D = m.d; tab = 'livery'; q = ''; dirty(false); $('app').classList.add('on'); markView('hero'); paint(); }
+  if (m.a === 'close') { $('app').classList.remove('on'); D = null; } });
+</script>
+</body></html>
